@@ -3,416 +3,492 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" id="theme-color-meta" content="#050505">
-    <meta name="application-name" content="MNDs Hub">
-    
-    <title>👑 MND HUB — Maa Nirmala DJ & Tent House | Full Screen Interface</title>
-    
+    <meta name="theme-color" content="#050505">
+    <title>MND Live Logistics | Cloud Tracking Portal</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Outfit:wght@300;400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-storage-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
 
     <style>
-        /* =========================================================================
-           GLOBAL VARIABLES & RESET
-           ========================================================================= */
+        /* === GLOBAL RESET & VARIABLES === */
         :root {
-            --bg-base: #030303; --bg-panel: rgba(10, 10, 10, 0.85); --bg-card: rgba(20, 20, 20, 0.9);
-            --border-color: rgba(212, 175, 55, 0.3); --gold-primary: #D4AF37; --gold-shine: #FFD700;
-            --neon-pink: #FF00FF; --neon-cyan: #00E5FF; --neon-lime: #00FA9A;
-            --text-main: #FFFFFF; --text-sub: #b3b3b3;
-            --font-head: 'Cinzel', serif; --font-body: 'Outfit', sans-serif;
-            --dynamic-shift: 15s; --header-height: 65px; --footer-height: 75px;
-            --glass-blur: blur(25px); --nav-glass: blur(30px);
+            --gold: #D4AF37;
+            --gold-glow: rgba(212, 175, 55, 0.4);
+            --neon-green: #00FA9A;
+            --bg-dark: #050508;
+            --panel-bg: rgba(15, 15, 20, 0.95);
+            --danger: #ff3333;
         }
 
-        [data-theme="light"] {
-            --bg-base: #f2f2f2; --bg-card: rgba(255, 255, 255, 0.95); --border-color: rgba(180, 140, 40, 0.3);
-            --gold-primary: #b08d26; --gold-shine: #d4a017; --text-main: #111111; --text-sub: #555555;
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body, html { width: 100vw; height: 100vh; background: var(--bg-dark); color: #fff; overflow-x: hidden; display: flex; justify-content: center; align-items: center; }
+
+        /* Animated Background */
+        .bg-map {
+            position: fixed; inset: 0; z-index: -1; opacity: 0.15;
+            background-image: radial-gradient(circle at 50% 50%, var(--gold-glow) 0%, transparent 60%);
+            animation: pulseBg 4s infinite alternate;
         }
+        @keyframes pulseBg { 0% { opacity: 0.1; } 100% { opacity: 0.25; } }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body, html { width: 100vw; min-height: 100vh; background-color: var(--bg-base); color: var(--text-main); font-family: var(--font-body); overflow-x: hidden; -webkit-overflow-scrolling: touch; transition: background-color 0.4s ease, color 0.4s ease; }
-        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: var(--gold-primary); border-radius: 10px; }
-        .hidden { display: none !important; }
+        /* === VIEW MANAGER (Strict SPA) === */
+        .view-container {
+            display: none; flex-direction: column; align-items: center;
+            width: 100%; min-height: 100vh; padding: 40px 20px;
+            animation: fadeIn 0.4s ease forwards; overflow-y: auto;
+        }
+        .active-view { display: flex !important; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* =========================================================================
-           SMART SCROLL HIDING FOR FLOATING BUTTONS
-           ========================================================================= */
-        .ai-trigger, .live-track-trigger, .bottom-nav { transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s ease; z-index: 4000; }
-        .hide-on-scroll { transform: translateY(150px) scale(0.8) !important; opacity: 0; pointer-events: none; }
+        /* === GATEKEEPER UI === */
+        .gatekeeper-box {
+            background: var(--panel-bg); border: 2px solid var(--gold); border-radius: 20px;
+            padding: 40px 25px; width: 100%; max-width: 450px; margin: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9), inset 0 0 30px rgba(212, 175, 55, 0.1);
+            backdrop-filter: blur(15px); text-align: center;
+        }
+        .app-title { font-family: 'Cinzel', serif; color: var(--gold); font-size: 26px; font-weight: 900; letter-spacing: 2px; margin-bottom: 5px; text-shadow: 0 0 15px var(--gold-glow); }
+        .app-subtitle { color: #aaa; font-size: 13px; margin-bottom: 25px; line-height: 1.5; }
 
-        /* =========================================================================
-           GATEKEEPER (ENTRY SCREEN)
-           ========================================================================= */
-        #gatekeeper { position: fixed; inset: 0; z-index: 99999; background: var(--bg-base); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; background-image: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 80%); transition: opacity 0.8s ease, visibility 0.8s; }
-        .gate-card { width: 100%; max-width: 400px; max-height: 85vh; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--gold-primary); border-radius: 20px; padding: 40px 25px; box-shadow: 0 0 80px rgba(212, 175, 55, 0.15); backdrop-filter: blur(20px); position: relative; overflow-y: auto; overflow-x: hidden; animation: pulseCard 4s infinite alternate; }
-        @keyframes pulseCard { from { transform: scale(1); border-color: rgba(212,175,55,0.3); } to { transform: scale(1.005); border-color: rgba(212,175,55,0.6); } }
-        .gate-img-frame { width: 110px; height: 110px; margin: 0 auto 20px; border-radius: 50%; padding: 3px; border: 2px solid var(--gold-primary); box-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
-        .gate-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .gate-title { font-family: 'Cinzel'; color: var(--gold-primary); font-size: 26px; margin-bottom: 5px; text-shadow: 0 0 15px rgba(212, 175, 55, 0.5); font-weight: 700; }
-        .gate-sub { color: #666; font-size: 11px; letter-spacing: 4px; margin-bottom: 30px; font-family: 'Rajdhani'; text-transform: uppercase; }
-        .gate-input-group { position: relative; margin-bottom: 15px; text-align: left; }
-        .gate-input { width: 100%; padding: 15px 15px 15px 45px; background: rgba(255, 255, 255, 0.05); border: 1px solid #333; color: #fff; font-size: 16px; font-family: 'Rajdhani'; transition: 0.3s; border-radius: 10px; box-sizing: border-box; }
-        .gate-input:focus { border-color: var(--gold-primary); background: rgba(212, 175, 55, 0.08); box-shadow: 0 0 15px rgba(212,175,55,0.1); }
-        .gate-icon { position: absolute; left: 15px; top: 17px; color: #555; transition: 0.3s; }
-        .gate-input:focus + .gate-icon { color: var(--gold-primary); }
-        .gate-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--gold-primary), #997d2d); color: #000; font-weight: 800; font-size: 16px; border: none; cursor: pointer; border-radius: 10px; text-transform: uppercase; letter-spacing: 2px; margin-top: 15px; box-shadow: 0 5px 25px rgba(212, 175, 55, 0.3); transition: 0.3s; }
-        .gate-btn:active { transform: scale(0.98); }
-        .loading-text { margin-top: 20px; font-size: 12px; color: var(--gold-primary); font-family: 'Rajdhani'; display: none; letter-spacing: 1px; font-weight: bold; }
+        .input-group { width: 100%; position: relative; margin-bottom: 15px; }
+        .input-group i { position: absolute; left: 15px; top: 16px; color: var(--gold); font-size: 16px; }
+        .mn-input {
+            width: 100%; padding: 15px 15px 15px 45px; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(212,175,55,0.3); color: #fff; border-radius: 10px;
+            font-size: 15px; outline: none; transition: 0.3s ease; box-sizing: border-box;
+        }
+        .mn-input:focus { border-color: var(--gold); background: rgba(212,175,55,0.08); box-shadow: 0 0 15px var(--gold-glow); }
+        .pin-style { letter-spacing: 8px; font-size: 22px; font-weight: 900; text-align: center; padding-left: 15px; }
+        .pin-style + i { display: none; }
 
-        /* =========================================================================
-           MAIN UI LAYOUT
-           ========================================================================= */
-        #main-interface { display: none; opacity: 0; transition: opacity 1.5s ease; padding-top: 65px; padding-bottom: 90px; }
+        .mn-btn {
+            width: 100%; padding: 16px; border-radius: 10px; font-weight: 900; font-size: 15px;
+            cursor: pointer; transition: 0.3s; display: flex; justify-content: center; align-items: center; gap: 10px;
+            border: none; letter-spacing: 1px; text-transform: uppercase;
+        }
+        .mn-btn:active { transform: scale(0.97); }
+        .btn-gold { background: var(--gold); color: #000; box-shadow: 0 5px 20px var(--gold-glow); }
+        .btn-green { background: #25D366; color: #fff; margin-top: 10px; }
+        .btn-dark { background: transparent; border: 1px solid var(--gold); color: var(--gold); margin-top: 15px; }
+        .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); margin-top: 20px; }
+
+        .error-msg { color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 15px; display: none; text-align: center; }
+
+        /* === DASHBOARD LAYOUTS === */
+        .dash-header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(212,175,55,0.3); padding-bottom: 15px; }
+        .status-badge { background: rgba(0, 250, 154, 0.1); border: 1px solid var(--neon-green); color: var(--neon-green); padding: 5px 12px; border-radius: 30px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px;}
         
-        #dynamic-bg { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -10; background-color: var(--bg-base); background-image: radial-gradient(circle at 15% 25%, var(--neon-pink-dim), transparent 45%), radial-gradient(circle at 85% 75%, var(--neon-cyan-dim), transparent 45%), radial-gradient(circle at 50% 50%, transparent 0%, #000 100%); animation: bodyHueShift var(--dynamic-shift) infinite linear; pointer-events: none; }
-        @keyframes bodyHueShift { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+        .card { width: 100%; max-width: 600px; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); padding: 20px; border-radius: 15px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+        .card h3 { color: var(--gold); font-family: 'Cinzel'; margin-bottom: 15px; font-size: 18px; border-bottom: 1px dashed var(--glass-border); padding-bottom: 5px; }
 
-        /* Header */
-        header { position: fixed; top: 0; left: 0; right: 0; height: var(--header-height); background: rgba(5, 5, 5, 0.90); padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; justify-content: center; backdrop-filter: blur(15px); z-index: 1000; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
-        .header-top { display: flex; justify-content: space-between; align-items: center; }
-        .logo-block { font-family: var(--font-head); font-weight: 900; font-size: 20px; color: var(--gold-primary); text-shadow: 0 0 12px rgba(212,175,55,0.5); }
-        .control-icons { display: flex; gap: 15px; color: #fff; font-size: 20px; cursor: pointer; align-items: center; }
-        .control-icons i:hover { color: var(--gold-primary); text-shadow: 0 0 10px var(--gold-primary); }
+        /* Admin Live List */
+        .client-list-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 3px solid var(--neon-green); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .client-list-item h4 { margin:0 0 3px 0; font-size: 14px; }
+        .client-list-item p { margin:0; font-size: 11px; color: #888; }
+        .client-list-pin { font-family: monospace; font-size: 16px; color: var(--gold); font-weight: bold; background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 4px; }
 
-        /* Google Translate Square Button */
-        #google_translate_element { width: 38px; height: 38px; overflow: hidden; border-radius: 8px; }
-        .goog-te-gadget-simple { background-color: rgba(255, 255, 255, 0.05) !important; border: 1px solid #D4AF37 !important; border-radius: 8px !important; width: 38px !important; height: 38px !important; padding: 0 !important; display: flex !important; justify-content: center !important; align-items: center !important; box-sizing: border-box !important; position: relative; cursor: pointer; transition: 0.3s ease; }
-        .goog-te-gadget-simple:hover { background-color: rgba(212,175,55,0.15) !important; box-shadow: 0 0 10px rgba(212,175,55,0.4) !important; }
-        .goog-te-gadget-simple span, .goog-te-gadget-icon, .goog-te-menu-value span { display: none !important; }
-        .goog-te-gadget-simple::after { content: '\f1ab'; font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free'; font-weight: 900; color: #D4AF37; font-size: 16px; }
-        .goog-logo-link { display: none !important; } .goog-te-gadget { color: transparent !important; }
+        /* Map Iframe */
+        .map-wrapper { width: 100%; height: 250px; border-radius: 12px; overflow: hidden; border: 2px solid #333; position: relative; background: #111; }
+        .map-iframe { width: 100%; height: 100%; border: none; filter: invert(90%) hue-rotate(180deg) brightness(80%) contrast(120%) sepia(50%); pointer-events: none; }
+        .map-loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #555; font-size: 12px; text-align: center; font-weight: bold; }
 
-        /* Bottom Nav */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--footer-height); background: rgba(5, 5, 5, 0.95); backdrop-filter: var(--nav-glass); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
-        .bottom-nav::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(to right, var(--neon-cyan), var(--gold-primary), var(--neon-pink)); box-shadow: 0 0 20px 2px var(--gold-primary); animation: bottomNavShine 3s infinite linear; }
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-sub); gap: 4px; cursor: pointer; transition: 0.3s; }
-        .nav-item i { font-size: 22px; }
-        .nav-item span { font-size: 11px; font-family: var(--font-body); text-transform: uppercase; font-weight: 800; }
-        .nav-item:hover i { color: #fff; transform: translateY(-3px); }
-        .nav-item.active { color: var(--gold-primary); text-shadow: 0 0 15px var(--gold-primary); }
-        .nav-item.active i { transform: translateY(-3px); }
+        /* Updates Feed */
+        .update-box { background: rgba(212,175,55,0.05); border-left: 3px solid var(--gold); padding: 15px; border-radius: 0 8px 8px 0; margin-top: 10px; }
+        .update-time { font-size: 10px; color: #888; margin-bottom: 5px; font-family: monospace; }
+        .update-text { font-size: 14px; color: #fff; line-height: 1.5; }
 
-        /* Modals & Overlays */
-        .mn-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(5,5,8,0.95); z-index: 9999999; justify-content: center; align-items: center; backdrop-filter: blur(12px); animation: fadeInOverlay 0.3s ease; }
-        .mn-modal-box { background: linear-gradient(135deg, #111 0%, #050505 100%); border: 2px solid var(--gold-primary); border-radius: 16px; width: 95%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 30px rgba(212, 175, 55, 0.1); animation: slideDownFade 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
-        .mn-modal-header { padding: 20px; text-align: center; border-bottom: 1px solid rgba(212,175,55,0.3); position: relative; }
-        .mn-modal-close { position: absolute; top: 15px; right: 20px; color: var(--gold-primary); font-size: 35px; line-height: 1; cursor: pointer; transition: 0.3s; z-index: 10; }
-        .mn-modal-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
-        
-        @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideDownFade { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Floating Triggers */
-        .ai-trigger { position: fixed; bottom: 90px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-primary), #997d2d); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(212,175,55,0.4); cursor: pointer; animation: pulse 3s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        
-        .live-track-trigger { position: fixed; bottom: 165px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background: rgba(212, 175, 55, 0.15); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(212, 175, 55, 0.6); display: flex; align-items: center; justify-content: center; color: #D4AF37; font-size: 24px; cursor: pointer; box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
-        .live-track-trigger:hover { background: rgba(212, 175, 55, 0.8); color: #000; box-shadow: 0 0 30px rgba(212, 175, 55, 0.6); transform: scale(1.05); }
-
-        /* Generic Form Elements */
-        .mnd-input { width: 100%; padding: 14px 15px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(212, 175, 55, 0.3); color: #fff; border-radius: 8px; outline: none; font-family: 'Outfit', sans-serif; box-sizing: border-box; transition: all 0.3s ease; margin-bottom: 15px; font-size: 14px; }
-        .mnd-input:focus { border-color: #D4AF37; background: rgba(212, 175, 55, 0.05); box-shadow: 0 0 12px rgba(212, 175, 55, 0.4); }
-        .mnd-btn { width: 100%; padding: 15px; border-radius: 8px; font-family: 'Outfit', sans-serif; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.3s; border: none; letter-spacing: 1px; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .btn-gold { background: var(--gold-primary); color: #000; box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3); }
-        .btn-outline { background: transparent; border: 1px solid var(--gold-primary); color: var(--gold-primary); }
     </style>
 </head>
-<body data-theme="dark">
+<body>
 
-    <div id="gatekeeper">
-        <div class="gate-card">
-            <div class="gate-img-frame"><img src="https://i.postimg.cc/76mz1v2j/file-0000000090a471fa84cbecd48a774885.png" class="gate-img" alt="Profile"></div>
-            <h2 class="gate-title">MAA NIRMALA DJ</h2>
-            <div class="gate-sub">SECURE PORTFOLIO GATEWAY</div>
-            <div class="gate-input-group"><input type="text" id="g-name" class="gate-input" placeholder="YOUR FULL NAME"><i class="fas fa-user gate-icon"></i></div>
-            <div class="gate-input-group"><input type="tel" id="g-phone" class="gate-input" placeholder="YOUR MOBILE NUMBER"><i class="fas fa-phone gate-icon"></i></div>
-            <button class="gate-btn" id="btn-verify" onclick="initiateSecureEntry()"><i class="fas fa-fingerprint"></i> VERIFY & ENTER</button>
-            <div class="loading-text" id="g-status"><i class="fas fa-circle-notch fa-spin"></i> OPENING WAIT FEW SEC...</div>
+    <div class="bg-map"></div>
+
+    <div id="view-gatekeeper" class="view-container active-view" style="justify-content: center;">
+        <div class="gatekeeper-box">
+            <h1 class="app-title"><i class="fas fa-satellite-dish"></i> MND HUB</h1>
+            <p class="app-subtitle">Secure Firebase Logistics Portal.<br>Enter your Number and PIN below.</p>
+            
+            <div class="input-group">
+                <i class="fas fa-phone"></i>
+                <input type="tel" id="login-phone" class="mn-input" placeholder="Mobile Number *">
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="login-pin" class="mn-input pin-style" placeholder="******" maxlength="6">
+            </div>
+
+            <button class="mn-btn btn-gold" id="login-btn" onclick="processLogin()"><i class="fas fa-fingerprint"></i> AUTHENTICATE CLOUD</button>
+            <p id="login-error" class="error-msg"><i class="fas fa-times-circle"></i> Access Denied. Check Number or PIN.</p>
         </div>
     </div>
 
-    <div id="main-interface">
-        <div id="dynamic-bg"></div>
-
-        <header>
-            <div class="header-top">
-                <div class="logo-block"><i class="fas fa-crown"></i> MND CREATORS</div>
-                <div class="control-icons">
-                    <div id="google_translate_element"></div>
-                    <div class="nav-btn-square theme-btn" onclick="themeSwitch()"><i class="fas fa-sun" id="themeIcon"></i></div>
-                    <div class="nav-btn-square set-btn" onclick="openModal('masterSettingsOverlay')"><i class="fas fa-cog"></i></div>
-                </div>
+    <div id="view-admin" class="view-container">
+        <div class="dash-header">
+            <div>
+                <h2 style="color:var(--gold); font-family:'Cinzel'; margin:0; font-size:20px;">Management Hub</h2>
+                <span style="font-size:12px; color:#888;">Cloud Database Connected</span>
             </div>
-        </header>
-
-        <div id="main-scroll-content" style="width: 100%; padding: 0 15px; display: flex; flex-direction: column; align-items: center; overflow-y: auto;">
-            <div style="max-width: 800px; width: 100%;">
-                
-                <div style="position: relative; width: 100vw; margin-left: calc(-50vw + 50%); height: 45vh; min-height: 400px; border-radius: 0 0 35px 35px; overflow: hidden; border-bottom: 1px solid var(--border-color); box-shadow: 0 10px 40px rgba(0,0,0,0.9);">
-                    <img src="https://i.postimg.cc/g20XqtDW/IMG_20260303_121446.png" style="width: 100%; height: 100%; object-fit: cover; object-position: center 20%;">
-                    <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 0%, rgba(5,5,5,0.8) 50%, #050505 100%);"></div>
-                    <div style="position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; padding: 0 20px;">
-                        <h1 style="font-family: 'Cinzel'; font-size: 38px; font-weight: 900; margin: 0; background: linear-gradient(to right, #FFD700, #FF1493, #8A2BE2, #00FA9A, #FFD700); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: textDeepShine 3s linear infinite;">MAA NIRMALA DJ</h1>
-                        <span style="font-family: 'Cinzel'; font-size: 18px; font-weight: 700; letter-spacing: 4px; color: var(--gold-primary);">STAY ROYAL, BE PREMIUM</span>
-                    </div>
-                </div>
-                <style>@keyframes textDeepShine { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }</style>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px;">
-                    <a href="tel:+919771617808" class="mnd-btn btn-outline" style="text-decoration: none;"><i class="fas fa-phone-alt"></i> CALL NOW</a>
-                    <button class="mnd-btn btn-gold" onclick="openModal('bookModal')"><i class="fas fa-calendar-check"></i> BOOK NOW</button>
-                </div>
-
-                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-top: 25px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.3);">
-                    <h3 style="color: var(--gold-primary); font-family: 'Cinzel'; margin-bottom: 10px; font-size: 20px;"><i class="fas fa-bolt"></i> Event Highlights</h3>
-                    <p style="font-size: 14px; line-height: 1.6; color: #ddd; margin-bottom: 15px;">Experience premium streaming, high-bass audio, and cinematic lighting setups for your grand occasions.</p>
-                    <button class="mnd-btn btn-outline" onclick="openModal('galleryModalOverlay')">VIEW LIVE GALLERY</button>
-                </div>
-
-                <div style="height: 100px;"></div> </div>
+            <div class="status-badge"><i class="fas fa-cloud"></i> ONLINE</div>
         </div>
 
-        <div class="ai-trigger" onclick="openModal('aiModal')"><i class="fas fa-brain" style="font-size:24px; color:#fff;"></i></div>
-        <div class="live-track-trigger" onclick="openModal('liveTrackModalOverlay')"><div class="radar-ping"></div><i class="fas fa-satellite-dish"></i></div>
+        <div class="card">
+            <h3><i class="fas fa-user-plus"></i> 1. Create Client Access</h3>
+            <input type="text" id="admin-c-name" class="mn-input" style="padding:10px; margin-bottom:10px;" placeholder="Client Name *">
+            <input type="tel" id="admin-c-phone" class="mn-input" style="padding:10px; margin-bottom:10px;" placeholder="Client Phone (Used for Login) *">
+            <input type="text" id="admin-c-event" class="mn-input" style="padding:10px; margin-bottom:15px;" placeholder="Event Name *">
+            
+            <button class="mn-btn btn-gold" id="btn-generate" onclick="adminGeneratePin()"><i class="fas fa-cogs"></i> GENERATE PIN & SAVE</button>
 
-        <div class="bottom-nav">
-            <div class="nav-item active" onclick="navAction('home')"><i class="fas fa-home"></i><span>Home</span></div>
-            <div class="nav-item" onclick="openModal('linksModal')"><i class="fas fa-link"></i><span>Links</span></div>
-            <div class="nav-item" onclick="openModal('socialModalOverlay')"><i class="fas fa-camera-retro"></i><span>Social</span></div>
-            <div class="nav-item" onclick="openModal('authModal')"><i class="fas fa-user-shield"></i><span>Admin</span></div>
-        </div>
-
-    </div>
-
-    <div id="liveTrackModalOverlay" class="mn-modal-overlay" onclick="closeOnOutside(event, 'liveTrackModalOverlay')">
-        <div class="mn-modal-box">
-            <div class="mn-modal-header">
-                <span class="mn-modal-close" onclick="closeModal('liveTrackModalOverlay')">×</span>
-                <h2 style="margin:0; color:var(--gold-primary); font-family:'Cinzel'; font-size:22px; font-weight:800;"><i class="fas fa-route"></i> Live Event Portal</h2>
-            </div>
-            <div class="mn-modal-content">
-                <div id="clientTrackLoginArea">
-                    <p style="color:#aaa; text-align:center; font-size:13px; margin-bottom:20px;">Enter your registered mobile number and the 6-digit tracking PIN provided by Management.</p>
-                    <input type="tel" id="client-track-phone" class="mnd-input" placeholder="Your Registered Mobile Number *">
-                    <input type="password" id="client-track-pin" class="mnd-input" placeholder="6-Digit Tracking PIN *" maxlength="6" style="letter-spacing: 5px; text-align: center; font-size: 20px; font-weight: bold;">
-                    <button class="mnd-btn btn-gold" onclick="clientLoginToTracking()"><i class="fas fa-unlock-alt"></i> ACCESS LIVE TRACKING</button>
-                </div>
-                <div id="clientTrackDashboardArea" class="hidden" style="flex-direction:column; align-items:center;">
-                    <div style="background: rgba(0, 250, 154, 0.1); border: 1px solid #00fa9a; padding: 10px 20px; border-radius: 30px; color: #00fa9a; font-size: 12px; font-weight: bold; margin-bottom: 20px;"><i class="fas fa-circle fa-beat"></i> CONNECTION SECURE</div>
-                    <div style="width: 100%; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; border: 1px solid rgba(212,175,55,0.3); margin-bottom: 15px;">
-                        <h4 style="color:#D4AF37; font-family:'Cinzel'; margin: 0 0 10px 0;">Event Logistics</h4>
-                        <p style="color:#fff; font-size:14px; margin: 0 0 5px 0;"><strong>Event:</strong> <span id="dash-event-name">Loading...</span></p>
-                        <p style="color:#aaa; font-size:12px; margin: 0;"><strong>Admin:</strong> Maa Nirmala HQ</p>
-                    </div>
-                    <div style="width: 100%; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; border: 1px solid rgba(212,175,55,0.3); margin-bottom: 20px; text-align: center;">
-                        <h4 style="color:#D4AF37; font-family:'Cinzel'; margin: 0 0 10px 0;"><i class="fas fa-map-marker-alt"></i> Admin Live GPS</h4>
-                        <p style="color:#fff; font-size:13px; margin-bottom: 15px;">Location broadcast is active.</p>
-                        <a id="dash-map-link" href="#" target="_blank" class="mnd-btn btn-gold" style="text-decoration: none;"><i class="fas fa-location-arrow"></i> OPEN LIVE MAP</a>
-                    </div>
-                    <button class="mnd-btn btn-outline" style="border-color: #ff3333; color: #ff3333;" onclick="logoutTracking()"><i class="fas fa-sign-out-alt"></i> DISCONNECT</button>
-                </div>
+            <div id="admin-pin-result" style="display:none; margin-top:15px; text-align:center;">
+                <p style="color:#aaa; font-size:12px;">Share this data via WhatsApp:</p>
+                <div style="font-family:'Courier New'; font-size:32px; color:var(--neon-green); font-weight:900; letter-spacing:8px; margin:10px 0;" id="display-new-pin">000000</div>
+                <button class="mn-btn btn-green" onclick="adminShareWhatsApp()"><i class="fab fa-whatsapp"></i> SEND TO CLIENT</button>
             </div>
         </div>
-    </div>
 
-    <div id="authModal" class="mn-modal-overlay" onclick="closeOnOutside(event, 'authModal')">
-        <div class="mn-modal-box">
-            <div class="mn-modal-header">
-                <span class="mn-modal-close" onclick="closeModal('authModal')">×</span>
-                <h2 style="margin:0; color:var(--gold-primary); font-family:'Cinzel'; font-size:22px; font-weight:800;"><i class="fas fa-user-shield"></i> Management Hub</h2>
-            </div>
-            <div class="mn-modal-content">
-                <div id="adminLoginArea">
-                    <p style="color:#aaa; font-size:13px; text-align:center; margin-bottom:20px;">Restricted access. Enter management credentials.</p>
-                    <input type="tel" id="admin-phone" class="mnd-input" placeholder="Admin Mobile Number *">
-                    <input type="password" id="admin-pin" class="mnd-input" placeholder="Secure Auth Code *">
-                    <button class="mnd-btn btn-gold" onclick="verifyAdmin()"><i class="fas fa-shield-alt"></i> VERIFY LOGIN</button>
-                </div>
-                <div id="adminPanel" class="hidden">
-                    <p style="color:#00FA9A; font-size:12px; font-weight:bold; text-align:center; margin-bottom:20px;"><i class="fas fa-check-circle"></i> ADMIN VERIFIED</p>
-                    
-                    <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--gold-primary); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-                        <h4 style="color:#D4AF37; font-family:'Cinzel'; margin: 0 0 10px 0;"><i class="fas fa-satellite"></i> Tracking Generator</h4>
-                        <p style="color:#aaa; font-size:11px; margin-bottom:10px;">Broadcast GPS & create PIN for client.</p>
-                        <input type="tel" id="admin-track-client-phone" class="mnd-input" placeholder="Client Mobile *" style="padding: 10px; margin-bottom: 10px;">
-                        <input type="text" id="admin-track-event-name" class="mnd-input" placeholder="Event Name *" style="padding: 10px; margin-bottom: 10px;">
-                        <button class="mnd-btn btn-gold" id="adminGenerateTrackBtn" onclick="adminGenerateTrackingData()"><i class="fas fa-broadcast-tower"></i> BROADCAST GPS</button>
-                        
-                        <div id="adminGeneratedPinDisplay" class="hidden" style="margin-top:15px; background:rgba(0,250,154,0.1); border:1px dashed #00fa9a; padding:10px; border-radius:8px; text-align:center;">
-                            <span style="color:#00fa9a; font-size:11px; display:block;">Share this PIN with Client:</span>
-                            <span id="adminNewPinText" style="color:#fff; font-size:24px; font-weight:900; letter-spacing:5px;"></span>
-                        </div>
-                    </div>
-                    
-                    <button class="mnd-btn btn-outline" style="border-color: #ff3333; color: #ff3333;" onclick="logoutAdmin()"><i class="fas fa-sign-out-alt"></i> SECURE LOGOUT</button>
-                </div>
+        <div class="card">
+            <h3><i class="fas fa-network-wired"></i> 2. Active Network Links</h3>
+            <p style="font-size:11px; color:#888; margin-bottom:10px;">Clients currently stored in the cloud database.</p>
+            <div id="admin-active-list" style="max-height: 150px; overflow-y: auto;">
+                <div style="text-align:center; color:#555; font-size:12px; padding:10px;">Loading database...</div>
             </div>
         </div>
+
+        <div class="card">
+            <h3><i class="fas fa-broadcast-tower"></i> 3. Broadcast Live GPS</h3>
+            <p style="font-size:12px; color:#aaa; margin-bottom:15px;">Push your real-time coordinates to Firebase for clients to see.</p>
+            
+            <button class="mn-btn btn-dark" id="btn-broadcast" onclick="toggleLocationBroadcast()"><i class="fas fa-location-arrow"></i> START BROADCASTING</button>
+            <p id="broadcast-status" style="color:var(--neon-green); font-size:12px; text-align:center; margin-top:10px; display:none; font-weight:bold;"><i class="fas fa-circle fa-beat"></i> GPS Cloud Sync Active...</p>
+        </div>
+
+        <div class="card">
+            <h3><i class="fas fa-comment-dots"></i> 4. Push Cloud Update</h3>
+            <textarea id="admin-update-text" class="mn-input" rows="2" style="resize:none; padding:10px;" placeholder="e.g., 'Truck has reached Katoria bypass...'"></textarea>
+            <button class="mn-btn btn-gold" id="btn-push-update" onclick="adminPushUpdate()"><i class="fas fa-paper-plane"></i> SEND UPDATE</button>
+        </div>
+
+        <button class="mn-btn btn-danger" onclick="systemLogout()"><i class="fas fa-sign-out-alt"></i> SECURE LOGOUT</button>
     </div>
 
-    <div id="bookModal" class="mn-modal-overlay" onclick="closeOnOutside(event, 'bookModal')">
-        <div class="mn-modal-box"><div class="mn-modal-header"><span class="mn-modal-close" onclick="closeModal('bookModal')">×</span><h2><i class="fas fa-calendar-check"></i> Booking</h2></div>
-        <div class="mn-modal-content"><p style="color:#fff; text-align:center;">Booking form goes here...</p></div></div>
-    </div>
-    
-    <div id="linksModal" class="mn-modal-overlay" onclick="closeOnOutside(event, 'linksModal')">
-        <div class="mn-modal-box"><div class="mn-modal-header"><span class="mn-modal-close" onclick="closeModal('linksModal')">×</span><h2><i class="fas fa-link"></i> Links</h2></div>
-        <div class="mn-modal-content"><p style="color:#fff; text-align:center;">Link tree goes here...</p></div></div>
-    </div>
-    
-    <div id="socialModalOverlay" class="mn-modal-overlay" onclick="closeOnOutside(event, 'socialModalOverlay')">
-        <div class="mn-modal-box"><div class="mn-modal-header"><span class="mn-modal-close" onclick="closeModal('socialModalOverlay')">×</span><h2><i class="fas fa-camera-retro"></i> Social</h2></div>
-        <div class="mn-modal-content"><p style="color:#fff; text-align:center;">Social feeds go here...</p></div></div>
-    </div>
-    
-    <div id="galleryModalOverlay" class="mn-modal-overlay" onclick="closeOnOutside(event, 'galleryModalOverlay')">
-        <div class="mn-modal-box"><div class="mn-modal-header"><span class="mn-modal-close" onclick="closeModal('galleryModalOverlay')">×</span><h2><i class="fas fa-image"></i> Gallery</h2></div>
-        <div class="mn-modal-content"><p style="color:#fff; text-align:center;">Images go here...</p></div></div>
-    </div>
+    <div id="view-client" class="view-container">
+        <div class="dash-header">
+            <div style="width:70%;">
+                <h2 id="client-dash-event" style="color:var(--gold); font-family:'Cinzel'; margin:0; font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Loading Event...</h2>
+                <span style="font-size:12px; color:#888;">Client: <span id="client-dash-name">Loading...</span></span>
+            </div>
+            <div class="status-badge"><i class="fas fa-circle fa-beat"></i> LIVE CLOUD</div>
+        </div>
 
-    <div id="masterSettingsOverlay" class="mn-modal-overlay" onclick="closeOnOutside(event, 'masterSettingsOverlay')">
-        <div class="mn-modal-box"><div class="mn-modal-header"><span class="mn-modal-close" onclick="closeModal('masterSettingsOverlay')">×</span><h2><i class="fas fa-cog"></i> Settings</h2></div>
-        <div class="mn-modal-content"><p style="color:#fff; text-align:center;">Settings go here...</p></div></div>
-    </div>
-    
-    <div id="aiModal" class="mn-modal-overlay" onclick="closeOnOutside(event, 'aiModal')">
-        <div class="mn-modal-box"><div class="mn-modal-header"><span class="mn-modal-close" onclick="closeModal('aiModal')">×</span><h2><i class="fas fa-robot"></i> AI Brain</h2></div>
-        <div class="mn-modal-content"><p style="color:#fff; text-align:center;">AI Chat goes here...</p></div></div>
+        <div class="card" style="padding: 10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 0 10px 10px; border-bottom: 1px dashed #333; margin-bottom: 10px;">
+                <h3 style="margin:0; border:none; padding:0; font-size:15px;"><i class="fas fa-map-marker-alt"></i> Logistics Tracker</h3>
+                <span id="client-gps-status" style="font-size:10px; color:#888;">Awaiting Cloud GPS...</span>
+            </div>
+            
+            <div class="map-wrapper">
+                <div class="map-loader" id="map-loader-text"><i class="fas fa-satellite fa-spin fa-2x"></i><br><br>SYNCING SIGNAL...</div>
+                <iframe id="client-map-iframe" class="map-iframe" src=""></iframe>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fas fa-bolt"></i> Live HQ Updates</h3>
+            <div id="client-updates-area">
+                <div style="text-align:center; color:#555; font-size:12px; padding:10px;">Awaiting updates from Firebase...</div>
+            </div>
+        </div>
+
+        <button class="mn-btn btn-danger" onclick="systemLogout()"><i class="fas fa-power-off"></i> DISCONNECT SESSION</button>
     </div>
 
 
     <script>
-        // --- UTILS & GLOBAL VARIABLES ---
-        const TG_TOKEN = "8671549318:AAFmsnS2xvhOJFgYUZfFDe5ELDhpYwlFVqQ";
-        const TG_CHAT = "8506290708";
-        let isAdmin = false;
+        // --- 1. FIREBASE CLOUD CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAyydGIkA9fDUxrBtKWHiY3q7adpnpiWe0",
+            authDomain: "mnd-40060.firebaseapp.com",
+            databaseURL: "https://mnd-40060-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "mnd-40060"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        // --- GATEKEEPER LOGIC ---
-        function initiateSecureEntry() {
-            const name = document.getElementById('g-name').value.trim();
-            const phone = document.getElementById('g-phone').value.trim();
-            if(!name || phone.length < 10) { alert("Please enter Full Name and valid 10-Digit Mobile Number."); return; }
-            
-            const btn = document.getElementById('btn-verify');
-            const status = document.getElementById('g-status');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SECURE OPENING...'; btn.style.opacity = "0.7";
-            status.style.display = "block";
-            
-            setTimeout(() => {
-                document.getElementById('gatekeeper').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('gatekeeper').style.display = 'none';
-                    document.getElementById('main-interface').style.display = 'block';
-                    setTimeout(() => { document.getElementById('main-interface').style.opacity = '1'; }, 50);
-                }, 800);
-            }, 2000);
+        // Admin Auth Configuration
+        const ADMIN_NUMBERS = ["9771617808", "9153635378", "7294969938", "+918544341240", "8544341240"];
+        const MASTER_PIN = "121120";
+        
+        let broadcastInterval = null;
+        let activeClientData = null; // Used for WhatsApp sharing
+        let clientPhoneListener = ""; // Used to track which client node to listen to
+
+        // --- 2. VIEW ROUTER ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+            document.querySelectorAll('.error-msg').forEach(el => el.style.display = 'none');
+            window.scrollTo(0,0);
         }
 
-        // --- MODAL CONTROLS ---
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function closeOnOutside(e, id) { if(e.target.id === id) closeModal(id); }
-        function navAction(act) { document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); event.currentTarget.classList.add('active'); if(act==='home') window.scrollTo({top:0, behavior:'smooth'}); }
-        function themeSwitch() { const b = document.body; const i = document.getElementById('themeIcon'); if(b.getAttribute('data-theme')==='dark'){ b.setAttribute('data-theme', 'light'); i.className='fas fa-moon'; b.style.backgroundColor='#fff'; } else { b.setAttribute('data-theme', 'dark'); i.className='fas fa-sun'; b.style.backgroundColor='#030303'; } }
+        // --- 3. THE SMART CLOUD GATEKEEPER ---
+        function processLogin() {
+            const phone = document.getElementById('login-phone').value.trim();
+            const pin = document.getElementById('login-pin').value.trim();
+            const err = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn');
 
-        // --- SMART SCROLL ENGINE ---
-        let lastScroll = window.scrollY;
-        window.addEventListener('scroll', () => {
-            const currentScroll = window.scrollY;
-            const floatingUI = document.querySelectorAll('.live-track-trigger, .ai-trigger, .bottom-nav');
-            if (currentScroll > lastScroll && currentScroll > 100) { floatingUI.forEach(el => el.classList.add('hide-on-scroll')); } 
-            else { floatingUI.forEach(el => el.classList.remove('hide-on-scroll')); }
-            lastScroll = currentScroll;
-        }, { passive: true });
+            if(!phone || !pin) { err.innerText = "Please enter both fields."; err.style.display = 'block'; return; }
 
+            // A. Check if Admin
+            if(ADMIN_NUMBERS.includes(phone) && pin === MASTER_PIN) {
+                document.getElementById('login-phone').value = ''; document.getElementById('login-pin').value = '';
+                switchView('view-admin');
+                startAdminListListener(); // Fetch active clients from Firebase
+                return;
+            }
 
-        // --- STRICT ADMIN LOGIN & DASHBOARD ---
-        function verifyAdmin() {
-            const phone = document.getElementById('admin-phone').value.trim();
-            const pin = document.getElementById('admin-pin').value.trim();
-            // Authorized numbers
-            const AUTH_NUMBERS = ["9771617808", "9153635378", "7294969938", "8544341240", "+918544341240"];
+            // B. Check Client against Firebase Database
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> QUERYING CLOUD...';
+            btn.disabled = true;
+
+            // Look up the specific phone number in the tracking database
+            db.ref('active_trackings/' + phone).once('value').then((snapshot) => {
+                btn.innerHTML = '<i class="fas fa-fingerprint"></i> AUTHENTICATE CLOUD';
+                btn.disabled = false;
+
+                if (snapshot.exists()) {
+                    const clientData = snapshot.val();
+                    
+                    // Verify the PIN matches what is stored online
+                    if(clientData.pin === pin) {
+                        // Success!
+                        document.getElementById('login-phone').value = ''; document.getElementById('login-pin').value = '';
+                        document.getElementById('client-dash-name').innerText = clientData.name;
+                        document.getElementById('client-dash-event').innerText = clientData.event;
+                        
+                        clientPhoneListener = phone; // Save this to track specific client data if needed
+                        startClientWatchListeners(); // Turn on Cloud listeners
+                        switchView('view-client');
+                    } else {
+                        err.innerHTML = "<i class='fas fa-times-circle'></i> Access Denied. Incorrect PIN.";
+                        err.style.display = 'block';
+                    }
+                } else {
+                    err.innerHTML = "<i class='fas fa-times-circle'></i> Access Denied. Number not found in database.";
+                    err.style.display = 'block';
+                }
+            }).catch((error) => {
+                btn.innerHTML = '<i class="fas fa-fingerprint"></i> AUTHENTICATE CLOUD';
+                btn.disabled = false;
+                err.innerHTML = "<i class='fas fa-wifi'></i> Network Error. Check connection.";
+                err.style.display = 'block';
+            });
+        }
+
+        // --- 4. ADMIN: GENERATE SECURE PIN & SAVE TO FIREBASE ---
+        function adminGeneratePin() {
+            const name = document.getElementById('admin-c-name').value.trim();
+            const phone = document.getElementById('admin-c-phone').value.trim();
+            const event = document.getElementById('admin-c-event').value.trim();
+            const btn = document.getElementById('btn-generate');
+
+            if(!name || !phone || !event) { alert("⚠️ All fields required to generate PIN."); return; }
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SAVING TO CLOUD...';
+            btn.disabled = true;
+
+            // Generate 6-Digit PIN
+            const pin = Math.floor(100000 + Math.random() * 900000).toString();
+            activeClientData = { name, phone, event, pin };
+
+            // Save to Firebase under the phone number
+            db.ref('active_trackings/' + phone).set({
+                name: name,
+                phone: phone,
+                event: event,
+                pin: pin,
+                timestamp: Date.now()
+            }).then(() => {
+                // Update UI
+                document.getElementById('display-new-pin').innerText = pin;
+                document.getElementById('admin-pin-result').style.display = 'block';
+                
+                // Clear inputs
+                document.getElementById('admin-c-name').value = '';
+                document.getElementById('admin-c-phone').value = '';
+                document.getElementById('admin-c-event').value = '';
+
+                btn.innerHTML = '<i class="fas fa-cogs"></i> GENERATE PIN & SAVE';
+                btn.disabled = false;
+            }).catch((error) => {
+                alert("Database Error: " + error.message);
+                btn.innerHTML = '<i class="fas fa-cogs"></i> GENERATE PIN & SAVE';
+                btn.disabled = false;
+            });
+        }
+
+        function adminShareWhatsApp() {
+            if(!activeClientData) return;
+            const msg = `👑 *MAA NIRMALA DJ - CLOUD TRACKING* 👑\n\nHello ${activeClientData.name},\nYour logistics for *${activeClientData.event}* are now online.\n\nAccess the Live Cloud Tracker here:\nhttps://maa-nirmala-dj.github.io/Live-tracking/\n\n📱 *Login Number:* ${activeClientData.phone}\n🔐 *Tracking PIN:* ${activeClientData.pin}`;
+            const cleanPhone = activeClientData.phone.replace(/\D/g,'');
+            window.open(`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // --- 5. ADMIN: WATCH ACTIVE NETWORK (FIREBASE) ---
+        function startAdminListListener() {
+            const listArea = document.getElementById('admin-active-list');
             
-            if(AUTH_NUMBERS.includes(phone) && pin === "121120") {
-                isAdmin = true;
-                document.getElementById('adminLoginArea').classList.add('hidden');
-                document.getElementById('adminPanel').classList.remove('hidden');
-                document.getElementById('admin-phone').value = ''; document.getElementById('admin-pin').value = '';
+            // Listen for changes in the active_trackings node
+            db.ref('active_trackings').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    let html = '';
+                    snapshot.forEach((childSnapshot) => {
+                        const data = childSnapshot.val();
+                        html += `
+                            <div class="client-list-item">
+                                <div>
+                                    <h4>${data.name}</h4>
+                                    <p>${data.phone} • ${data.event}</p>
+                                </div>
+                                <div class="client-list-pin">${data.pin}</div>
+                            </div>
+                        `;
+                    });
+                    listArea.innerHTML = html;
+                } else {
+                    listArea.innerHTML = '<div style="text-align:center; color:#555; font-size:12px; padding:10px;">No active tracking sessions.</div>';
+                }
+            });
+        }
+
+        // --- 6. ADMIN: BROADCAST GPS TO FIREBASE ---
+        function toggleLocationBroadcast() {
+            const btn = document.getElementById('btn-broadcast');
+            const status = document.getElementById('broadcast-status');
+
+            if(broadcastInterval) {
+                // Stop Broadcasting
+                clearInterval(broadcastInterval);
+                broadcastInterval = null;
+                btn.innerHTML = '<i class="fas fa-location-arrow"></i> START BROADCASTING';
+                btn.style.borderColor = 'var(--gold)'; btn.style.color = 'var(--gold)';
+                status.style.display = 'none';
             } else {
-                alert("❌ SECURITY ALERT: Unauthorized Number or Incorrect PIN.");
+                // Start Broadcasting
+                if(!navigator.geolocation) { alert("Browser does not support GPS."); return; }
+                
+                btn.innerHTML = '<i class="fas fa-times-circle"></i> STOP BROADCASTING';
+                btn.style.borderColor = 'var(--danger)'; btn.style.color = 'var(--danger)';
+                status.style.display = 'block';
+
+                // Update location immediately, then every 10 seconds
+                pushLocationToCloud(); 
+                broadcastInterval = setInterval(pushLocationToCloud, 10000);
             }
         }
-        function logoutAdmin() {
-            isAdmin = false;
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('adminLoginArea').classList.remove('hidden');
-            document.getElementById('adminGeneratedPinDisplay').classList.add('hidden');
+
+        function pushLocationToCloud() {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                // Push globally to Firebase so any logged-in client can read it
+                db.ref('admin_location').set({
+                    lat: lat,
+                    lng: lng,
+                    time: new Date().toLocaleTimeString()
+                });
+            }, (err) => {
+                console.error("GPS Error", err);
+            }, { enableHighAccuracy: true });
         }
 
-        // --- ADMIN TRACKING PIN GENERATOR ---
-        function adminGenerateTrackingData() {
-            const cPhone = document.getElementById('admin-track-client-phone').value.trim();
-            const eName = document.getElementById('admin-track-event-name').value.trim();
-            const btn = document.getElementById('adminGenerateTrackBtn');
+        // --- 7. ADMIN: PUSH CLOUD UPDATE ---
+        function adminPushUpdate() {
+            const text = document.getElementById('admin-update-text').value.trim();
+            const btn = document.getElementById('btn-push-update');
+            if(!text) return;
 
-            if(!cPhone || !eName) { alert("⚠️ Enter Client Phone and Event Name."); return; }
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PUSHING...';
+            btn.disabled = true;
 
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ACQUIRING GPS...'; btn.disabled = true;
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const mapLink = `https://www.google.com/maps?q=$${pos.coords.latitude},${pos.coords.longitude}`;
-                        const pin = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
-                        
-                        const data = { clientPhone: cPhone, pin: pin, eventName: eName, mapLink: mapLink, timestamp: Date.now() };
-                        localStorage.setItem('mnd_tracking', JSON.stringify(data)); // Saving logic
-
-                        document.getElementById('adminGeneratedPinDisplay').classList.remove('hidden');
-                        document.getElementById('adminNewPinText').innerText = pin;
-                        btn.innerHTML = '<i class="fas fa-broadcast-tower"></i> BROADCAST GPS'; btn.disabled = false;
-                        alert("✅ GPS Locked! Send the 6-Digit PIN to the client.");
-                    },
-                    (err) => { alert("❌ Location Error. Enable GPS."); btn.innerHTML = '<i class="fas fa-broadcast-tower"></i> BROADCAST GPS'; btn.disabled = false; },
-                    { enableHighAccuracy: true }
-                );
-            } else { alert("❌ Browser does not support GPS."); btn.disabled = false; }
+            // Push a new record into a list of updates
+            db.ref('live_updates').push({
+                text: text,
+                time: new Date().toLocaleTimeString(),
+                timestamp: Date.now()
+            }).then(() => {
+                document.getElementById('admin-update-text').value = '';
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> SEND UPDATE';
+                btn.disabled = false;
+            });
         }
 
-        // --- CLIENT LIVE TRACKING LOGIN ---
-        function clientLoginToTracking() {
-            const phone = document.getElementById('client-track-phone').value.trim();
-            const pin = document.getElementById('client-track-pin').value.trim();
-            if(!phone || !pin) { alert("⚠️ Enter Phone and 6-Digit PIN."); return; }
+        // --- 8. CLIENT: WATCH CLOUD FOR UPDATES ---
+        function startClientWatchListeners() {
+            // 1. Listen for Admin GPS Changes
+            db.ref('admin_location').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById('client-gps-status').innerHTML = `<span style="color:var(--neon-green);">GPS Link Active (${data.time})</span>`;
+                    document.getElementById('map-loader-text').style.display = 'none';
+                    
+                    // Update Iframe Map cleanly
+                    const mapUrl = `https://maps.google.com/maps?q=${data.lat},${data.lng}&z=16&output=embed`;
+                    const iframe = document.getElementById('client-map-iframe');
+                    if(iframe.src !== mapUrl) { iframe.src = mapUrl; }
+                }
+            });
 
-            const dbData = localStorage.getItem('mnd_tracking');
-            if(dbData) {
-                const data = JSON.parse(dbData);
-                if(data.clientPhone === phone && data.pin === pin) {
-                    document.getElementById('clientTrackLoginArea').classList.add('hidden');
-                    document.getElementById('dash-event-name').innerText = data.eventName;
-                    document.getElementById('dash-map-link').href = data.mapLink;
-                    document.getElementById('clientTrackDashboardArea').classList.remove('hidden');
-                } else { alert("❌ ACCESS DENIED: Invalid Phone or PIN."); }
-            } else { alert("❌ No active tracking session found."); }
+            // 2. Listen for Text Updates (OrderBy child 'timestamp' to get chronological order)
+            db.ref('live_updates').orderByChild('timestamp').limitToLast(10).on('value', (snapshot) => {
+                const updateArea = document.getElementById('client-updates-area');
+                if(snapshot.exists()) {
+                    let html = '';
+                    const updates = [];
+                    // Convert to array to reverse order (newest top)
+                    snapshot.forEach((child) => { updates.push(child.val()); });
+                    updates.reverse().forEach((update) => {
+                        html += `
+                            <div class="update-box">
+                                <div class="update-time">${update.time}</div>
+                                <div class="update-text">${update.text}</div>
+                            </div>
+                        `;
+                    });
+                    updateArea.innerHTML = html;
+                } else {
+                    updateArea.innerHTML = '<div style="text-align:center; color:#555; font-size:12px; padding:10px;">Awaiting updates from Firebase...</div>';
+                }
+            });
         }
-        
-        function logoutTracking() {
-            document.getElementById('clientTrackDashboardArea').classList.add('hidden');
-            document.getElementById('clientTrackLoginArea').classList.remove('hidden');
-            document.getElementById('client-track-phone').value = '';
-            document.getElementById('client-track-pin').value = '';
+
+        // --- 9. SYSTEM LOGOUT ---
+        function systemLogout() {
+            // Stop Admin Broadcasting if running
+            if(broadcastInterval) toggleLocationBroadcast();
+            
+            // Turn off Firebase Listeners to save bandwidth
+            db.ref('active_trackings').off();
+            db.ref('admin_location').off();
+            db.ref('live_updates').off();
+            clientPhoneListener = "";
+            
+            // Clear Client UI
+            document.getElementById('client-map-iframe').src = "";
+            document.getElementById('map-loader-text').style.display = 'block';
+            document.getElementById('client-gps-status').innerText = "Awaiting Cloud GPS...";
+            document.getElementById('client-updates-area').innerHTML = '<div style="text-align:center; color:#555; font-size:12px; padding:10px;">Awaiting updates from Firebase...</div>';
+            
+            // Clear Admin UI
+            document.getElementById('admin-pin-result').style.display = 'none';
+            document.getElementById('admin-update-text').value = '';
+            
+            switchView('view-gatekeeper');
         }
     </script>
 </body>
