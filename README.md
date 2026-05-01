@@ -560,11 +560,30 @@
         }
 
         function adminShareWhatsApp() {
-            if(!activeClientData) return;
-            const msg = `👑 *MAA NIRMALA DJ - LIVE TRACKING* 👑\n\nHello ${activeClientData.name},\nYour logistics for *${activeClientData.event}* are active.\n\n*How to track:*\n1. Click the link below to open our secure portal.\n2. At the bottom right corner (above the MND AI button), tap the 'Live Location' button.\n3. Enter your registered mobile number and 6-digit PIN to begin tracking.\n\n🔗 *Link:* https://maa-nirmala-dj.github.io/Live-tracking/\n📱 *Login Number:* ${activeClientData.phone}\n🔐 *Tracking PIN:* ${activeClientData.pin}`;
-            const cleanPhone = activeClientData.phone.replace(/\D/g,'');
-            window.open(`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-        }
+    if (!activeClientData) return;
+    
+    const msg = `*👑 MAA NIRMALA DJ & TENT HOUSE BELTIKRI ( 813106 ) 👑*
+
+ *📍 LIVE LOCATION TRACKING📍*
+
+Hello ${activeClientData.name},
+Your logistics for *${activeClientData.event}* are active.
+----------------------------------------------------------
+*How to track:*
+1. Click the link and open the website.
+2. At the bottom right corner (above the MND AI button), click the 'Live Location' button to open the tracking portal.
+3. Enter your registered mobile number and 6-digit PIN to track.
+----------------------------------------------------------
+ ••••••••••••••••••••••••••••••••••••••••••••••••
+ 🔗 *Link:* https://maa-nirmala-dj.github.io/Live-tracking/
+📱 *Login Number:* ${activeClientData.phone}
+🔐 *Tracking PIN:* ${activeClientData.pin}
+•••••••••••••••••••••••••••••••••••••••••••••••
+Thank You.`;
+
+    const cleanPhone = activeClientData.phone.replace(/\D/g, '');
+    window.open(`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
 
         // --- 7. ADMIN: SEQUENTIAL HISTORY LIST ---
         function startAdminHistoryListener() {
