@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -173,8 +172,8 @@
     <!-- ========================================================================= -->
     <div id="view-gatekeeper" class="view-container active-view" style="justify-content: center;">
         <div class="gatekeeper-box" style="background: rgba(15,15,20,0.85); position:relative; overflow:hidden;">
-            <h1 class="app-title"><i class="fas fa-satellite-dish"></i> MND HUB</h1>
-            <p class="app-subtitle">Secured Cloud Logistics Portal.<br>Enter your Mobile Number and PIN below.</p>
+            <h1 class="app-title"><i class="fas fa-satellite-dish"></i> MND TRACKING</h1>
+            <p class="app-subtitle">Secured Cloud Logistics Portal.<br>Enter your Mobile Number and PIN below.Send in your Register Whatsapp Number</p>
             
             <div class="input-group">
                 <i class="fas fa-phone-alt"></i>
@@ -182,7 +181,7 @@
             </div>
             
             <div class="input-group">
-                <input type="password" id="login-pin" class="mn-input pin-style" placeholder="PIN" maxlength="6" autocomplete="off">
+                <input type="password" id="login-pin" class="mn-input pin-style" placeholder="6 DIGIT PIN" maxlength="6" autocomplete="off">
             </div>
 
             <button class="mn-btn btn-gold" id="login-btn" onclick="processLogin()"><i class="fas fa-fingerprint"></i> INITIATE HANDSHAKE</button>
